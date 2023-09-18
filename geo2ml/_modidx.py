@@ -63,11 +63,4 @@ d = { 'settings': { 'branch': 'main',
                                                                                   'geo2ml/scripts/data.py'),
                                      'geo2ml.scripts.data.sample_points': ('scripts.data.html#sample_points', 'geo2ml/scripts/data.py'),
                                      'geo2ml.scripts.data.sample_polygons': ( 'scripts.data.html#sample_polygons',
-                                                                              'geo2ml/scripts/data.py')},
-            'geo2ml.utils': { 'geo2ml.utils.build_overviews': ('utils.html#build_overviews', 'geo2ml/utils.py'),
-                              'geo2ml.utils.check_cell': ('utils.html#check_cell', 'geo2ml/utils.py'),
-                              'geo2ml.utils.create_grid': ('utils.html#create_grid', 'geo2ml/utils.py'),
-                              'geo2ml.utils.create_qgis_colormap': ('utils.html#create_qgis_colormap', 'geo2ml/utils.py'),
-                              'geo2ml.utils.format_cli_info': ('utils.html#format_cli_info', 'geo2ml/utils.py'),
-                              'geo2ml.utils.save_raster': ('utils.html#save_raster', 'geo2ml/utils.py'),
-                              'geo2ml.utils.set_cli_styles': ('utils.html#set_cli_styles', 'geo2ml/utils.py')}}}
+                                                                              'geo2ml/scripts/data.py')}}}
