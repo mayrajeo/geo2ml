@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "geo2ml"
+  site-url: "https://mayrajeo.github.io/geo2ml"
+  description: " Python library and module for converting earth observation data to be suitable for machine learning models"
+  repo-branch: main
+  repo-url: "https://github.com/mayrajeo/geo2ml"

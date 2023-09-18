@@ -1,0 +1,22 @@
+website:
+  sidebar:
+    contents:
+      - index.ipynb
+      - section: Examples
+        contents:
+        - examples_tabular.ipynb
+        - examples_unet.ipynb
+        - examples_coco.ipynb
+        - examples_yolo.ipynb
+      - section: Tabular data
+        contents: 
+        - 10_data.tabular.ipynb
+      - section: Image data
+        contents: 
+        - 11_data.tiling.ipynb
+        - 12_data.coordinates.ipynb
+        - 13_data.cv.ipynb
+      - 31_plotting.ipynb
+      - section: CLI
+        contents:
+        - 41_scripts.data.ipynb
