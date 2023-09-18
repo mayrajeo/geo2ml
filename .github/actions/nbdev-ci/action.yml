@@ -43,6 +43,7 @@ runs:
         sudo apt-add-repository ppa:ubuntugis/ubuntugis-unstable
         sudo apt-get update
         sudo apt-get install gdal-bin libgdal-dev
+        echo gdal-config --version
         python -m pip install --upgrade pip
         if [ $USE_PRE ]; then
           pip install -U git+https://github.com/fastai/fastcore.git
