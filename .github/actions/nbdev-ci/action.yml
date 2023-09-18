@@ -1,0 +1,86 @@
+name: 'nbdev-ci'
+description: 'Test with nbdev'
+inputs:
+  pre:
+    description: 'Install prerelease nbdev/execnb from master?'
+    required: false
+    default: ''
+  version:
+    description: 'Version of python to set up'
+    required: false
+    default: '3.9'
+  skip_test:
+    description: 'Skip tests?'
+    required: false
+    default: ''
+  flags:
+    description: 'Space separated list of nbdev test flags to run that are normally ignored'
+    required: false
+    default: ''
+  torch_cpu:
+    description: "Install PyTorch CPU instead of PyTorch Cuda.  Has no effect if PyTorch isn't a requirement.  Enabled by defaut."
+    required: false
+    default: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.version }}
+        cache: "pip"
+        cache-dependency-path: settings.ini
+    - name: Test with nbdev
+      env:
+        USE_PRE: ${{ inputs.pre }}
+        SKIP_TEST: ${{ inputs.skip_test }}
+        FLAGS: ${{ inputs.flags }}
+        TORCH_CPU: "${{ inputs.torch_cpu }}"
+      shell: bash
+      run: |
+        set -ux
+        sudo apt-add-repository ppa:ubuntugis/ubuntugis-unstable
+        sudo apt-get update
+        sudo apt-get install gdal-bin libgdal-dev
+        python -m pip install --upgrade pip
+        if [ $USE_PRE ]; then
+          pip install -U git+https://github.com/fastai/fastcore.git
+          pip install -U git+https://github.com/fastai/ghapi.git
+          pip install -U git+https://github.com/fastai/execnb.git
+          pip install -U git+https://github.com/fastai/nbdev.git
+        else
+          pip install -U nbdev
+        fi
+        echo "Doing editable install..."
+        if [ $TORCH_CPU ]; then
+          test -f setup.py && pip install -e ".[dev]" --extra-index-url https://download.pytorch.org/whl/cpu
+        else
+          test -f setup.py && pip install -e ".[dev]"
+        fi
+        echo "Check we are starting with clean git checkout"
+        if [[ `git status --porcelain -uno` ]]; then
+          git diff
+          echo "git status is not clean"
+          false
+        fi
+        echo "Trying to strip out notebooks"
+        nbdev_clean
+        echo "Check that strip out was unnecessary"
+        git status -s # display the status to see which nbs need cleaning up
+        if [[ `git status --porcelain -uno` ]]; then
+          git status -uno
+          echo -e "!!! Detected unstripped out notebooks\n!!!Remember to run nbdev_install_hooks"
+          echo -e "This error can also happen if you are using an older version of nbdev relative to what is in CI.  Please try to upgrade nbdev with the command `pip install -U nbdev`"
+          false
+        fi
+        nbdev_export
+        if [[ `git status --porcelain -uno` ]]; then
+          echo "::error::Notebooks and library are not in sync.  Please run nbdev_export."
+          git status -uno
+          git diff
+          exit 1;
+        fi
+        if [ ! $SKIP_TEST ]; then
+          nbdev_test --flags "$FLAGS"
+        fi
