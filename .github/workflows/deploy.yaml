@@ -11,4 +11,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps: [uses: ./.github/actions/quarto-ghp]
+    steps: 
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/quarto-ghp
