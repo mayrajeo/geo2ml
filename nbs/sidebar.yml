@@ -13,9 +13,10 @@ website:
         - 10_data.tabular.ipynb
       - section: Image data
         contents: 
-        - 11_data.tiling.ipynb
-        - 12_data.coordinates.ipynb
+        - 12_data.tiling.ipynb
+        - 11_data.coordinates.ipynb
         - 13_data.cv.ipynb
+        - 14_data.postprocessing.ipynb
       - 31_plotting.ipynb
       - section: CLI
         contents:
