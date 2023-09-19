@@ -281,7 +281,11 @@ def coco_to_shp(
 
 # %% ../../nbs/13_data.cv.ipynb 21
 def shp_to_coco_results(
-    prediction_path: Path, raster_path: Path, coco_dict: Path, outpath: Path
+    prediction_path: Path,
+    raster_path: Path,
+    coco_dict: Path,
+    outpath: Path,
+    rotated_bbox: bool = False,
 ):
     "Convert vector predictions into coco result format to be fed into COCO evaluator"
 
@@ -304,7 +308,7 @@ def shp_to_coco_results(
         image_id = coco_dict["images"][im_id]["id"]
         h = coco_dict["images"][im_id]["height"]
         w = coco_dict["images"][im_id]["width"]
-        gdf = gpd.read_file(f"{self.prediction_path}/{result_tiles[i]}")
+        gdf = gpd.read_file(f"{prediction_path}/{vector_tiles[i]}")
         tfmd_gdf = gdf_to_px(gdf, raster_path / raster_tiles[i], precision=3)
         for row in tfmd_gdf.itertuples():
             res = {
