@@ -44,12 +44,16 @@ def sample_raster_with_points(
     sampling_locations: Path,
     input_raster: Path,
     target_column: str,
+    gpkg_layer: str = None,
     band_names: list[str] = None,
     rename_target: str = None,
 ) -> gpd.GeoDataFrame:
     "Extract values from `input_raster` using points from `sampling_locations`. Returns a `gpd.GeoDataFrame` with columns `target_column`, `geometry` and bands"
 
-    gdf = gpd.read_file(sampling_locations)
+    if str(sampling_locations).endswith("gpkg") and not gpkg_layer:
+        raise Exception("`sampling_locations` is .gpkg but no `gpkg_layer` specified")
+
+    gdf = gpd.read_file(sampling_locations, layer=gpkg_layer)
 
     with rio.open(input_raster) as src:
         assert str(gdf.crs) == str(
@@ -82,11 +86,12 @@ def sample_raster_with_points(
         out_gdf[b] = values[:, i].astype(prof["dtype"])
     return out_gdf
 
-# %% ../../nbs/10_data.tabular.ipynb 24
+# %% ../../nbs/10_data.tabular.ipynb 25
 def sample_raster_with_polygons(
     sampling_locations: Path,
     input_raster: Path,
     target_column: str = None,
+    gpkg_layer: str = None,
     band_names: list[str] = None,
     rename_target: str = None,
     stats: list[str] = ["min", "max", "mean", "count"],
@@ -94,7 +99,10 @@ def sample_raster_with_polygons(
 ) -> gpd.GeoDataFrame:
     "Extract values from `input_raster` using polygons from `sampling_locations` with `rasterstats.zonal_stats` for all bands"
 
-    gdf = gpd.read_file(sampling_locations)
+    if str(sampling_locations).endswith("gpkg") and not gpkg_layer:
+        raise Exception("`sampling_locations` is .gpkg but no `gpkg_layer` specified")
+
+    gdf = gpd.read_file(sampling_locations, layer=gpkg_layer)
     with rio.open(input_raster) as src:
         assert str(gdf.crs) == str(
             src.crs
@@ -105,7 +113,12 @@ def sample_raster_with_polygons(
     for i in range(n_bands):
         zstats.append(
             zonal_stats(
-                gdf, input_raster, band_num=i + 1, categorical=categorical, stats=stats
+                gdf,
+                input_raster,
+                band_num=i + 1,
+                categorical=categorical,
+                stats=stats,
+                nodata=-999,
             )
         )
 

@@ -83,5 +83,5 @@ runs:
           exit 1;
         fi
         if [ ! $SKIP_TEST ]; then
-          nbdev_test --flags "$FLAGS"
+          nbdev_test --flags "$FLAGS" --n_workers 1
         fi

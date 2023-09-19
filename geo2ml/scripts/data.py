@@ -22,6 +22,7 @@ def sample_points(
     input_raster: Path,  # Path to the raster used for sampling
     target_column: str,  # Column of `sampling_locations` used as the target
     outpath: Path,  # Path to save the output files. Is created if doesn't exist
+    gpkg_layer: str = None,  # If `sampling_locations` is .gpkg, specify the layer used. Ignored otherwise.
     save_as_shp: bool = False,  # Save results as shapefiles? If False, saves as geojson
     rename_target: str = None,  # If provided, target column is renamed to this
     band_names: Path = None,  # Path to a file providing bands to use as rows
@@ -73,6 +74,7 @@ def sample_polygons(
     std: bool,  # Compute standard deviation
     median: bool,  # Compute median
     categorical: bool = False,  # Are bands categorical data?
+    gpkg_layer: str = None,  # If `sampling_locations` is .gpkg, specify the layer used. Ignored otherwise.
     save_as_shp: bool = False,  # Save results as shapefiles? If False, saves as geojson
     rename_target: str = None,  # If provided, target column is renamed to this
     band_names: Path = None,  # Path to a file providing bands to use as rows
@@ -138,12 +140,13 @@ def create_raster_dataset(
     outpath: Path,  # Where to save the results
     save_grid: bool = False,  # Whether to save the tiling grid
     target_column: str = None,  # If mask_path contains vector data, identifier of the column containing the class information
+    gpkg_layer: str = None,  # If `polygon_path` is a geopackage, specify the layer used. Ignored otherwise.
     gridsize_x: int = 256,  # Size of tiles in x-axis in pixels
     gridsize_y: int = 256,  # Size of tiles in y-axis in pixels
     overlap_x: int = 0,  # Overlap of tiles in x-axis in pixels
     overlap_y: int = 0,  # Overlap of tiles in y-axis in pixels
 ):
-    "Create a semantic segmentation dataset from a `raster` and corresponding `raster_mask`. Raster image patches are saved to `outpath/raster_tiles` and mask patches to `outpath/mask_tiles`"
+    "Create a semantic segmentation dataset from a `raster_path` and corresponding mask `mask_path`. Raster image patches are saved to `outpath/raster_tiles` and mask patches to `outpath/mask_tiles`"
     tiler = Tiler(
         outpath,
         gridsize_x=gridsize_x,
@@ -152,7 +155,7 @@ def create_raster_dataset(
     )
     tiler.tile_raster(raster_path)
 
-    polygon_extensions = [".shp", ".geojson"]
+    polygon_extensions = [".shp", ".geojson", ".gpkg"]
     raster_extensions = [".tif"]
 
     if mask_path.suffix in raster_extensions:
@@ -163,7 +166,9 @@ def create_raster_dataset(
             raise Exception(
                 "If mask_path contains polygon data, target_column must be provided"
             )
-        tiler.tile_and_rasterize_vector(raster_path, mask_path, column=target_column)
+        tiler.tile_and_rasterize_vector(
+            raster_path, mask_path, column=target_column, gpkg_layer=gpkg_layer
+        )
         os.rename(tiler.rasterized_vector_path, outpath / "mask_images")
     if save_grid:
         tiler.grid.to_file(outpath / "grid.geojson")
@@ -176,6 +181,8 @@ def create_coco_dataset(
     target_column: str,  # Which column contains class information
     outpath: Path,  # Where to save the resulting files
     dataset_name: str,  # Name of the dataset
+    gpkg_layer: str = None,  # If `polygon_path` is a geopackage, specify the layer used. Ignored otherwise.
+    min_area_pct: float = 0.0,  # How small polygons keep after tiling?
     save_grid: bool = False,  # Should tiling grid be saved
     gridsize_x: int = 320,  # Size of tiles in x-axis in pixels
     gridsize_y: int = 320,  # Size of tiles in y-axis in pixels
@@ -230,6 +237,8 @@ def create_yolo_dataset(
     target_column: str,  # Which column contains class information
     outpath: Path,  # Where to save the resulting files?
     dataset_name: str = None,  # Optional name of the dataset
+    gpkg_layer: str = None,  # If `polygon_path` is a geopackage, specify the layer used. Ignored otherwise.
+    min_area_pct: float = 0.0,  # How small polygons keep after tiling?
     save_grid: bool = False,  # Should tiling grid be saved?
     gridsize_x: int = 320,  # Size of tiles in x-axis, pixels
     gridsize_y: int = 320,  # Size fo tiles in y-axis, pixels

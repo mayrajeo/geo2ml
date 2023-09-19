@@ -23,7 +23,7 @@ from .postproc import *
 
 # %% ../../nbs/12_data.tiling.ipynb 12
 def fix_multipolys(multipoly: shapely.geometry.MultiPolygon):
-    """Convert MultiPolygon to a single Polygon.
+    """Convert MultiPolygon to a single Polygon as coco and yolo don't work with polygons with holes in them.
     The resulting Polygon has the exterior boundaries of the largest geometry of the MultiPolygon
     """
     temp_poly = None
@@ -70,7 +70,6 @@ class Tiler:
             os.makedirs(self.raster_path)
         with rio.open(path_to_raster) as src:
             y, x = src.shape
-
             for (iy, dy), (ix, dx) in tqdm(
                 itertools.product(
                     enumerate(range(0, y, self.gridsize_y - self.overlap[1])),
@@ -85,6 +84,7 @@ class Tiler:
                     (dy, dy + self.gridsize_y), (dx, dx + self.gridsize_x)
                 )
                 prof = src.profile.copy()
+
                 prof.update(
                     height=window.height,
                     width=window.width,
@@ -107,20 +107,27 @@ class Tiler:
             )
         return
 
-    def tile_vector(self, path_to_vector: str, min_area_pct: float = 0.0) -> None:
+    def tile_vector(
+        self, path_to_vector: str, min_area_pct: float = 0.0, gpkg_layer: str = None
+    ) -> None:
         """
         Tiles a vector data file into smaller tiles. Converts all multipolygons to a regular polygons. `min_area_pct` is be used to specify the minimum area for partial masks to keep. Default value 0.0 keeps all masks.
         """
         if self.grid is None:
-            print(
+            raise Exception(
                 "No raster grid specified, use Tiler.tile_raster to determine grid limits"
             )
-            return
+
+        if path_to_vector.endswith(".gpkg") and not gpkg_layer:
+            raise Exception(
+                "`sampling_locations` is .gpkg but no `gpkg_layer` specified"
+            )
 
         if not os.path.exists(self.vector_path):
             os.makedirs(self.vector_path)
-        vector = gpd.read_file(path_to_vector)
-        # God bless spatial index
+
+        vector = gpd.read_file(path_to_vector, layer=gpkg_layer)
+
         sindex = vector.sindex
         for row in tqdm(self.grid.itertuples()):
             possible_matches_index = list(sindex.intersection(row.geometry.bounds))
@@ -128,12 +135,12 @@ class Tiler:
             tempvector["orig_area"] = tempvector.geometry.area
             tempvector = tempvector.clip(row.geometry, keep_geom_type=True)
 
-            if min_area_pct < 0 or min_area_pct >= 1:
+            if min_area_pct < 0 or min_area_pct > 1:
                 print("Invalid minimum area percentage set, defaulting to 0")
             tempvector = tempvector[
                 tempvector.geometry.area >= tempvector.orig_area * min_area_pct
             ]
-            # No annotations -> no shapefile
+            # No annotations -> no output file
             if len(tempvector) == 0:
                 continue
             tempvector["geometry"] = tempvector.apply(
@@ -153,15 +160,20 @@ class Tiler:
         path_to_raster: str,
         path_to_vector: str,
         column: str,
+        gpkg_layer: str = None,
         keep_bg_only: bool = False,
     ) -> None:
         """Rasterizes vectors based on tiled rasters. Saves label map to `self.outpath`. By default only keeps the patches that contain polygon data, by specifying `keep_bg_only=True` saves also masks for empty patches."""
 
         if self.grid is None:
-            print(
+            raise Exception(
                 "No raster grid specified, use Tiler.tile_raster to determine grid limits"
             )
-            return
+
+        if path_to_vector.endswith(".gpkg") and not gpkg_layer:
+            raise Exception(
+                "`sampling_locations` is .gpkg but no `gpkg_layer` specified"
+            )
 
         if not os.path.exists(self.rasterized_vector_path):
             os.makedirs(self.rasterized_vector_path)
@@ -184,21 +196,21 @@ class Tiler:
                     self.rasterized_vector_path / r, "w+", **out_meta
                 ) as dest:
                     dest_arr = dest.read(1)
-                    shapes = (
-                        (geom, value)
-                        for geom, value in zip(tempvector.geometry, tempvector["label"])
-                    )
                     if len(tempvector) == 0:
                         if keep_bg_only:
                             dest.write_band(1, dest_arr)
                         continue
+                    shapes = (
+                        (geom, value)
+                        for geom, value in zip(tempvector.geometry, tempvector["label"])
+                    )
                     burned = rio.features.rasterize(
                         shapes=shapes, fill=0, out=dest_arr, transform=dest.transform
                     )
                     dest.write_band(1, burned)
         return
 
-# %% ../../nbs/12_data.tiling.ipynb 24
+# %% ../../nbs/12_data.tiling.ipynb 27
 def untile_raster(path_to_targets: str, outfile: str, method: str = "first"):
     """Merge multiple patches from `path_to_targets` into a single raster`"""
 
@@ -246,7 +258,7 @@ def untile_vector(
     non_max_suppression_thresh: float = 0.0,
     nms_criterion: str = "score",
 ):
-    "Create single shapefile from a directory of predicted shapefiles"
+    "Create single shapefile from a directory of predicted .shp or .geojson files"
     pred_files = [
         f for f in os.listdir(path_to_targets) if f.endswith((".shp", ".geojson"))
     ]
