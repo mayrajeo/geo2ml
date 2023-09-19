@@ -11,25 +11,21 @@
 
 ## Install
 
-First clone the repository
+First install GDAL to your system. If you use conda then installing
+`rasterio` is enough, but with pip use instructions from
+<https://pypi.org/project/GDAL/>.
+
+Then you can install the package by
+
+``` bash
+pip install git+git://github.com/mayrajeo/geo2ml.git
+```
+
+If you want to have an editable install then first clone the repository
 
 ``` bash
 git clone https://github.com/mayrajeo/geo2ml.git
 cd geo2ml
-```
-
-Suggested approach is then to install
-[miniconda](https://docs.conda.io/en/latest/miniconda.html) and
-[Mamba](https://mamba.readthedocs.io/en/latest/installation.html) first.
-Then create the environment:
-
-``` bash
-mamba env create -f environment.yaml
-```
-
-and install the package
-
-``` bash
 pip install -e .
 ```
 
