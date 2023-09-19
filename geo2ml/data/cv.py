@@ -285,6 +285,7 @@ def shp_to_coco_results(
     raster_path: Path,
     coco_dict: Path,
     outpath: Path,
+    label_col: str = "label_id",
     rotated_bbox: bool = False,
 ):
     "Convert vector predictions into coco result format to be fed into COCO evaluator"
