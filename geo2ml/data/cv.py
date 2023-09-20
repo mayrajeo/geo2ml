@@ -279,12 +279,12 @@ def coco_to_shp(
         tfmd_gdf.to_file(outpath / f'{i["file_name"][:-4]}.geojson', driver="GeoJSON")
     return
 
-# %% ../../nbs/13_data.cv.ipynb 21
+# %% ../../nbs/13_data.cv.ipynb 22
 def shp_to_coco_results(
     prediction_path: Path,
     raster_path: Path,
     coco_dict: Path,
-    outpath: Path,
+    outfile: Path,
     label_col: str = "label_id",
     rotated_bbox: bool = False,
 ):
@@ -316,7 +316,9 @@ def shp_to_coco_results(
                 "image_id": image_id,
                 "category_id": getattr(row, label_col),
                 "segmentation": None,
-                "score": np.round(getattr(row, "score"), 5),
+                "score": np.round(getattr(row, "score"), 5)
+                if "score" in tfmd_gdf.columns
+                else 0.0,
             }
             ann = _process_shp_to_coco(
                 image_id, getattr(row, label_col), 0, row.geometry, rotated_bbox
@@ -327,11 +329,11 @@ def shp_to_coco_results(
             )
             results.append(res)
 
-    with open(outpath, "w") as f:
+    with open(outfile, "w") as f:
         json.dump(results, f)
     return
 
-# %% ../../nbs/13_data.cv.ipynb 24
+# %% ../../nbs/13_data.cv.ipynb 27
 def shp_to_yolo(
     raster_path: Path,
     shp_path: Path,
@@ -405,7 +407,7 @@ def shp_to_yolo(
         for n in names.keys():
             dest.write(f"  {names[n]}: {n}\n")
 
-# %% ../../nbs/13_data.cv.ipynb 30
+# %% ../../nbs/13_data.cv.ipynb 33
 def yolo_to_shp(
     prediction_path: Path,
     raster_path: Path,
