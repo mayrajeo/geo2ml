@@ -1,0 +1,32 @@
+name: geo2ml-dev
+channels:
+  - conda-forge
+  - fastchan
+  - pytorch
+  - nvidia
+dependencies:
+  - conda-forge::pip
+  - conda-forge::ipykernel
+  - fastchan::fastai==2.7.12
+  - pytorch::pytorch==2.0.1
+  - pytorch::torchvision
+  - pytorch::pytorch-cuda=11.7
+  - pytorch::torchaudio
+  - conda-forge::geopandas
+  - conda-forge::rasterio
+  - conda-forge::openpyxl
+  - conda-forge::seaborn
+  - conda-forge::xarray
+  - conda-forge::rioxarray
+  - conda-forge::dask
+  - conda-forge::dask-ml
+  - conda-forge::ipywidgets
+  - pip:
+    - black
+    - pycocotools
+    - "git+https://github.com/waspinator/pycococreator.git"
+    - rasterstats
+    - scikit-image
+    - ultralytics
+    - "git+https://github.com/facebookresearch/detectron2.git"
+    - nbdev

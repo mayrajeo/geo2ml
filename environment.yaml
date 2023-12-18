@@ -1,0 +1,62 @@
+name: geo2ml
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+
+  # DL
+
+  # Geo
+  - rasterio
+  - geopandas
+  - imgaug
+  - xarray
+  - rioxarray
+
+  # AutoML
+  - tpot
+  - xgboost
+
+  # DS
+  - numpy
+  - scipy
+  - scikit-learn>=0.22
+  - scikit-image
+  - pandas>=1.0.0
+  - opencv
+  - pillow>=6.0.0
+  - matplotlib
+  - seaborn
+  - plotly
+
+  - tqdm
+  - numba
+  - dask
+  - dask-ml
+  - joblib
+
+  # ipython + notebooks
+  - ipython
+  - notebook
+  - jupyterlab
+  - ipywidgets
+
+  # Testing + linting
+  - pylint
+  - pytest
+  - ruff
+
+  # Others
+  - openpyxl
+  - cupy
+  - pkg-config
+
+  - pip
+  - pip:
+    - black
+    - albumentations
+    - pyinstaller
+    - pycocotools
+    - "git+git://github.com/waspinator/pycococreator.git"
+    - rasterstats
