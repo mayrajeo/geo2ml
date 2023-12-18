@@ -17,6 +17,7 @@ from shapely.geometry import box
 import rasterio as rio
 import rasterio.mask as rio_mask
 import rasterio.windows as rio_windows
+import fiona
 from rasterio.merge import merge as rio_merge
 from sklearn.preprocessing import LabelEncoder
 from .postproc import *
@@ -108,10 +109,15 @@ class Tiler:
         return
 
     def tile_vector(
-        self, path_to_vector: str, min_area_pct: float = 0.0, gpkg_layer: str = None
+        self,
+        path_to_vector: str,
+        min_area_pct: float = 0.0,
+        gpkg_layer: str = None,
+        output_format: str = "geojson",
     ) -> None:
         """
-        Tiles a vector data file into smaller tiles. Converts all multipolygons to a regular polygons. `min_area_pct` is be used to specify the minimum area for partial masks to keep. Default value 0.0 keeps all masks.
+        Tiles a vector data file into smaller tiles. Converts all multipolygons to a regular polygons.
+        `min_area_pct` is be used to specify the minimum area for partial masks to keep. Default value 0.0 keeps all masks.
         """
         if self.grid is None:
             raise Exception(
@@ -123,8 +129,13 @@ class Tiler:
                 "`sampling_locations` is .gpkg but no `gpkg_layer` specified"
             )
 
-        if not os.path.exists(self.vector_path):
-            os.makedirs(self.vector_path)
+        if output_format == "geojson":
+            if not os.path.exists(self.vector_path):
+                os.makedirs(self.vector_path)
+        elif output_format == "gpkg":
+            outfile = self.outpath / "vectors.gpkg"
+        else:
+            raise Exception("Unknown output format, must be either `geojson` or `gpkg`")
 
         vector = gpd.read_file(path_to_vector, layer=gpkg_layer)
 
@@ -149,10 +160,12 @@ class Tiler:
                 else shapely.geometry.Polygon(row.geometry.exterior),
                 axis=1,
             )
-
-            tempvector.to_file(
-                f"{self.vector_path}/{row.cell}.geojson", driver="GeoJSON"
-            )
+            if output_format == "geojson":
+                tempvector.to_file(
+                    f"{self.vector_path}/{row.cell}.geojson", driver="GeoJSON"
+                )
+            elif output_format == "gpkg":
+                tempvector.to_file(outfile, layer=row.cell)
         return
 
     def tile_and_rasterize_vector(
@@ -163,7 +176,10 @@ class Tiler:
         gpkg_layer: str = None,
         keep_bg_only: bool = False,
     ) -> None:
-        """Rasterizes vectors based on tiled rasters. Saves label map to `self.outpath`. By default only keeps the patches that contain polygon data, by specifying `keep_bg_only=True` saves also masks for empty patches."""
+        """
+        Rasterizes vectors based on tiled rasters. Saves label map to `self.outpath`.
+        By default only keeps the patches that contain polygon data, by specifying `keep_bg_only=True` saves also masks for empty patches.
+        """
 
         if self.grid is None:
             raise Exception(
@@ -210,7 +226,7 @@ class Tiler:
                     dest.write_band(1, burned)
         return
 
-# %% ../../nbs/12_data.tiling.ipynb 27
+# %% ../../nbs/12_data.tiling.ipynb 30
 def untile_raster(path_to_targets: str, outfile: str, method: str = "first"):
     """Merge multiple patches from `path_to_targets` into a single raster`"""
 
@@ -258,17 +274,27 @@ def untile_vector(
     non_max_suppression_thresh: float = 0.0,
     nms_criterion: str = "score",
 ):
-    "Create single shapefile from a directory of predicted .shp or .geojson files"
-    pred_files = [
-        f for f in os.listdir(path_to_targets) if f.endswith((".shp", ".geojson"))
-    ]
-    gdf = None
-    for p in tqdm(pred_files):
-        temp_gdf = gpd.read_file(f"{path_to_targets}/{p}")
-        if gdf is None:
-            gdf = temp_gdf
-        else:
-            gdf = pd.concat((gdf, temp_gdf))
+    "Create single GIS-filie from a directory of predicted .shp or .geojson files"
+    if os.path.isdir(path_to_targets):  # directory
+        pred_files = [
+            f for f in os.listdir(path_to_targets) if f.endswith((".shp", ".geojson"))
+        ]
+        gdf = None
+        for p in tqdm(pred_files):
+            temp_gdf = gpd.read_file(f"{path_to_targets}/{p}")
+            if gdf is None:
+                gdf = temp_gdf
+            else:
+                gdf = pd.concat((gdf, temp_gdf))
+    elif path_to_targets.endswith("gpkg"):  # geopackage
+        layers = fiona.listlayers(path_to_targets)
+        gdf = None
+        for l in tqdm(layers):
+            temp_gdf = gpd.read_file(path_to_targets, layer=l)
+            if gdf is None:
+                gdf = temp_gdf
+            else:
+                gdf = pd.concat((gdf, temp_gdf))
     print(f"{len(gdf)} polygons before non-max suppression")
     if non_max_suppression_thresh != 0:
         np_bounding_boxes = np.array([b.bounds for b in gdf.geometry])

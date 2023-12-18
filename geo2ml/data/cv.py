@@ -21,6 +21,7 @@ from skimage import measure
 from pycocotools.mask import frPyObjects
 from shapely.geometry import MultiPolygon, Polygon
 import math
+import fiona
 
 # %% ../../nbs/13_data.cv.ipynb 7
 def calc_bearing(point1, point2):
@@ -127,7 +128,10 @@ def shp_to_coco(
     rotated_bbox: bool = False,
     dataset_name: str = None,
 ):
-    "Create a COCO style dataset from images in `raster_path` and corresponding polygons in `shp_path`, save annotations to `outpath`"
+    """Create a COCO style dataset from images in `raster_path` and corresponding polygons in `shp_path`, save annotations to `outpath`.
+    `shp_path` can be either geopackage containing layers so that each layer corresponds to an image,
+    or a directory containing multiple shp or geojson files, each corresponding to an image
+    """
 
     coco_dict = {"images": [], "annotations": [], "categories": coco_categories}
     if coco_info:
@@ -135,17 +139,27 @@ def shp_to_coco(
     if coco_licenses:
         coco_dict["licenses"] = coco_licenses
     categories = {c["name"]: c["id"] for c in coco_dict["categories"]}
-
-    vector_tiles = [f for f in os.listdir(shp_path) if f.endswith((".shp", ".geojson"))]
-    raster_tiles = [
-        f
-        for f in os.listdir(raster_path)
-        if f.split(".")[0] in [v.split(".")[0] for v in vector_tiles]
-    ]
+    if os.path.isdir(shp_path):
+        vector_tiles = [
+            f for f in os.listdir(shp_path) if f.endswith((".shp", ".geojson"))
+        ]
+        raster_tiles = [
+            f
+            for f in os.listdir(raster_path)
+            if f.split(".")[0] in [v.split(".")[0] for v in vector_tiles]
+        ]
+    elif shp_path.suffix == ".gpkg":
+        layers = fiona.listlayers(
+            shp_path
+        )  # Assume that shp_path contains a geopackage with layers named after images
+        raster_tiles = [f for f in os.listdir(raster_path) if f.split(".")[0] in layers]
     ann_id = 1
     for i, r in tqdm(enumerate(raster_tiles)):
         tile_anns = []
-        gdf = gpd.read_file(shp_path / vector_tiles[i])
+        if os.path.isdir(shp_path):
+            gdf = gpd.read_file(shp_path / vector_tiles[i])
+        elif shp_path.suffix == ".gpkg":
+            gdf = gpd.read_file(shp_path, layer=layers[i])
         tfmd_gdf = gdf_to_px(gdf, raster_path / r, precision=3)
         for row in tfmd_gdf.itertuples():
             category_id = categories[getattr(row, label_col)]
@@ -168,7 +182,7 @@ def shp_to_coco(
         json.dump(coco_dict, f)
     return
 
-# %% ../../nbs/13_data.cv.ipynb 18
+# %% ../../nbs/13_data.cv.ipynb 19
 def coco_to_shp(
     coco_data: Path | str, outpath: Path, raster_path: Path, downsample_factor: int = 1
 ):
@@ -279,7 +293,7 @@ def coco_to_shp(
         tfmd_gdf.to_file(outpath / f'{i["file_name"][:-4]}.geojson', driver="GeoJSON")
     return
 
-# %% ../../nbs/13_data.cv.ipynb 22
+# %% ../../nbs/13_data.cv.ipynb 23
 def shp_to_coco_results(
     prediction_path: Path,
     raster_path: Path,
@@ -288,19 +302,29 @@ def shp_to_coco_results(
     label_col: str = "label_id",
     rotated_bbox: bool = False,
 ):
-    "Convert vector predictions into coco result format to be fed into COCO evaluator"
+    """Convert vector predictions into coco result format to be fed into COCO evaluator
+
+    `prediction_path` can be either geopackage containing layers so that each layer corresponds to an image,
+    or a directory containing multiple shp or geojson files, each corresponding to an image
+    """
 
     with open(coco_dict) as f:
         coco_dict = json.load(f)
 
-    vector_tiles = [
-        f for f in os.listdir(prediction_path) if f.endswith((".shp", ".geojson"))
-    ]
-    raster_tiles = [
-        f
-        for f in os.listdir(raster_path)
-        if f.split(".")[0] in [v.split(".")[0] for v in vector_tiles]
-    ]
+    if os.path.isdir(prediction_path):
+        vector_tiles = [
+            f for f in os.listdir(prediction_path) if f.endswith((".shp", ".geojson"))
+        ]
+        raster_tiles = [
+            f
+            for f in os.listdir(raster_path)
+            if f.split(".")[0] in [v.split(".")[0] for v in vector_tiles]
+        ]
+    elif prediction_path.suffix == ".gpkg":
+        layers = fiona.listlayers(
+            shp_path
+        )  # Assume that shp_path contains a geopackage with layers named after images
+        raster_tiles = [f for f in os.listdir(raster_path) if f.split(".")[0] in layers]
     results = []
     for i in tqdm(range_of(raster_tiles)):
         for im_id, im in enumerate(coco_dict["images"]):
@@ -309,7 +333,10 @@ def shp_to_coco_results(
         image_id = coco_dict["images"][im_id]["id"]
         h = coco_dict["images"][im_id]["height"]
         w = coco_dict["images"][im_id]["width"]
-        gdf = gpd.read_file(f"{prediction_path}/{vector_tiles[i]}")
+        if os.path.isdir(prediction_path):
+            gdf = gpd.read_file(prediction_path / vector_tiles[i])
+        elif shp_path.suffix == ".gpkg":
+            gdf = gpd.read_file(prediction_path, layer=layers[i])
         tfmd_gdf = gdf_to_px(gdf, raster_path / raster_tiles[i], precision=3)
         for row in tfmd_gdf.itertuples():
             res = {
@@ -333,7 +360,7 @@ def shp_to_coco_results(
         json.dump(results, f)
     return
 
-# %% ../../nbs/13_data.cv.ipynb 27
+# %% ../../nbs/13_data.cv.ipynb 28
 def shp_to_yolo(
     raster_path: Path,
     shp_path: Path,
@@ -344,18 +371,32 @@ def shp_to_yolo(
     min_bbox_area: int = 0,
     dataset_name: str = None,
 ):
-    "Convert shapefiles in `shp_path` to YOLO style dataset. Creates a folder `labels` and `dataset_name.yaml`  to `outpath`"
-    vector_tiles = [f for f in os.listdir(shp_path) if f.endswith((".shp", ".geojson"))]
-    raster_tiles = [
-        f
-        for f in os.listdir(raster_path)
-        if f.split(".")[0] in [v.split(".")[0] for v in vector_tiles]
-    ]
+    """Convert shapefiles in `shp_path` to YOLO style dataset. Creates a folder `labels` and `dataset_name.yaml`  to `outpath`
+    `shp_path` can be either geopackage containing layers so that each layer corresponds to an image,
+    or a directory containing multiple shp or geojson files, each corresponding to a single image.
+    """
+    if os.path.isdir(shp_path):
+        vector_tiles = [
+            f for f in os.listdir(shp_path) if f.endswith((".shp", ".geojson"))
+        ]
+        raster_tiles = [
+            f
+            for f in os.listdir(raster_path)
+            if f.split(".")[0] in [v.split(".")[0] for v in vector_tiles]
+        ]
+    elif shp_path.suffix == ".gpkg":
+        layers = fiona.listlayers(
+            shp_path
+        )  # Assume that shp_path contains a geopackage with layers named after images
+        raster_tiles = [f for f in os.listdir(raster_path) if f.split(".")[0] in layers]
     ann_path = outpath / "labels"
     os.makedirs(ann_path, exist_ok=True)
     names = {n: i for i, n in enumerate(names)}
     for i, r in tqdm(enumerate(raster_tiles)):
-        gdf = gpd.read_file(shp_path / vector_tiles[i])
+        if os.path.isdir(shp_path):
+            gdf = gpd.read_file(shp_path / vector_tiles[i])
+        elif shp_path.suffix == ".gpkg":
+            gdf = gpd.read_file(shp_path, layer=layers[i])
         if ann_format == "rotated box":
             gdf["geometry"] = gdf.geometry.apply(
                 lambda row: row.minimum_rotated_rectangle
@@ -407,7 +448,7 @@ def shp_to_yolo(
         for n in names.keys():
             dest.write(f"  {names[n]}: {n}\n")
 
-# %% ../../nbs/13_data.cv.ipynb 33
+# %% ../../nbs/13_data.cv.ipynb 34
 def yolo_to_shp(
     prediction_path: Path,
     raster_path: Path,
