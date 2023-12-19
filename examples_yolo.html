@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Example workflow for creating a YOLO-format dataset and training an object detection model with ultralytics">
+
+<title>geo2ml - YOLOv8 workflow</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+<script src="https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js" crossorigin="anonymous"></script>
+
+
+<meta property="og:title" content="geo2ml - YOLOv8 workflow">
+<meta property="og:description" content="Example workflow for creating a YOLO-format dataset and training an object detection model with ultralytics">
+<meta property="og:image" content="https://mayrajeo.github.io/geo2ml/examples_yolo_files/figure-html/cell-4-output-1.png">
+<meta property="og:site-name" content="geo2ml">
+<meta property="og:image:height" content="468">
+<meta property="og:image:width" content="1426">
+<meta name="twitter:title" content="geo2ml - YOLOv8 workflow">
+<meta name="twitter:description" content="Example workflow for creating a YOLO-format dataset and training an object detection model with ultralytics">
+<meta name="twitter:image" content="https://mayrajeo.github.io/geo2ml/examples_yolo_files/figure-html/cell-4-output-1.png">
+<meta name="twitter:image-height" content="468">
+<meta name="twitter:image-width" content="1426">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">geo2ml</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools ms-auto">
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./examples_tabular.html">Examples</a></li><li class="breadcrumb-item"><a href="./examples_yolo.html">YOLOv8 workflow</a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">geo2ml</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Examples</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./examples_tabular.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tabular data workflow</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./examples_unet.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Unet workflow</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./examples_coco.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">COCO workflow</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./examples_yolo.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">YOLOv8 workflow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Tabular data</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.tabular.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tabular data</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Image data</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.tiling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tiling</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.coordinates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Coordinate transformations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Image data</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.postprocessing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Postprocessing</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./plotting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Plotting</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">CLI</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scripts.data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Dataset creation</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#install-required-dependencies" id="toc-install-required-dependencies" class="nav-link active" data-scroll-target="#install-required-dependencies">Install required dependencies</a></li>
+  <li><a href="#create-yolo-format-dataset" id="toc-create-yolo-format-dataset" class="nav-link" data-scroll-target="#create-yolo-format-dataset">Create YOLO-format dataset</a>
+  <ul class="collapse">
+  <li><a href="#cli" id="toc-cli" class="nav-link" data-scroll-target="#cli">CLI</a></li>
+  <li><a href="#python" id="toc-python" class="nav-link" data-scroll-target="#python">Python</a></li>
+  </ul></li>
+  <li><a href="#dataset-structure" id="toc-dataset-structure" class="nav-link" data-scroll-target="#dataset-structure">Dataset structure</a></li>
+  <li><a href="#create-yolo.yaml-for-the-dataset" id="toc-create-yolo.yaml-for-the-dataset" class="nav-link" data-scroll-target="#create-yolo.yaml-for-the-dataset">Create yolo.yaml for the dataset</a></li>
+  <li><a href="#train-the-model" id="toc-train-the-model" class="nav-link" data-scroll-target="#train-the-model">Train the model</a></li>
+  </ul>
+<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/mayrajeo/geo2ml/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
+    </div>
+<!-- main -->
+<main class="content column-body" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">YOLOv8 workflow</h1>
+</div>
+
+<div>
+  <div class="description">
+    Example workflow for creating a YOLO-format dataset and training an object detection model with <code>ultralytics</code>
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> rasterio <span class="im">as</span> rio</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> geopandas <span class="im">as</span> gpd</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> rasterio.plot <span class="im">as</span> rioplot</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>path_to_data <span class="op">=</span> Path(<span class="st">'workflow_examples/'</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>train_raster <span class="op">=</span> path_to_data<span class="op">/</span><span class="st">'104_28_Hiidenportti_Chunk1_orto.tif'</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>train_shp <span class="op">=</span> path_to_data<span class="op">/</span><span class="st">'104_28_Hiidenportti_Chunk1_orto.geojson'</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>test_raster <span class="op">=</span> path_to_data<span class="op">/</span><span class="st">'104_42_Hiidenportti_Chunk5_orto.tif'</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>test_shp <span class="op">=</span> path_to_data<span class="op">/</span><span class="st">'104_42_Hiidenportti_Chunk5_orto.geojson'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Example data is RGB UAV imagery from Hiidenportti, and the task is to detect and segment different deadwood types. The reference data are annotated as polygons, and target column is <code>layer</code>.</p>
+<p>Training area looks like this.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>fig, axs <span class="op">=</span> plt.subplots(<span class="dv">1</span>,<span class="dv">2</span>, dpi<span class="op">=</span><span class="dv">150</span>, figsize<span class="op">=</span>(<span class="dv">10</span>,<span class="dv">3</span>))</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> rio.<span class="bu">open</span>(train_raster) <span class="im">as</span> src:</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    rioplot.show(src, ax<span class="op">=</span>axs[<span class="dv">0</span>])</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>train_gdf <span class="op">=</span> gpd.read_file(train_shp)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>train_gdf.plot(column<span class="op">=</span><span class="st">'layer'</span>, ax<span class="op">=</span>axs[<span class="dv">1</span>], cmap<span class="op">=</span><span class="st">'seismic'</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>plt.suptitle(<span class="st">'Train area'</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="examples_yolo_files/figure-html/cell-4-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p>And test area looks like this.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fig, axs <span class="op">=</span> plt.subplots(<span class="dv">1</span>,<span class="dv">2</span>, dpi<span class="op">=</span><span class="dv">150</span>, figsize<span class="op">=</span>(<span class="dv">5</span>,<span class="dv">3</span>))</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> rio.<span class="bu">open</span>(test_raster) <span class="im">as</span> src:</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    rioplot.show(src, ax<span class="op">=</span>axs[<span class="dv">0</span>])</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>test_gdf <span class="op">=</span> gpd.read_file(test_shp)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>test_gdf.plot(column<span class="op">=</span><span class="st">'layer'</span>, ax<span class="op">=</span>axs[<span class="dv">1</span>], cmap<span class="op">=</span><span class="st">'seismic'</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>plt.suptitle(<span class="st">'Test area'</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="examples_yolo_files/figure-html/cell-5-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<section id="install-required-dependencies" class="level2">
+<h2 class="anchored" data-anchor-id="install-required-dependencies">Install required dependencies</h2>
+<p><code>ultralytics</code> requires at least Python 3.8 and PyTorch 1.7. First install PyTorch <a href="https://pytorch.org/">according to instructions found here</a>, then install ultralytics with <code>pip install ultralytics</code>.</p>
+</section>
+<section id="create-yolo-format-dataset" class="level2">
+<h2 class="anchored" data-anchor-id="create-yolo-format-dataset">Create YOLO-format dataset</h2>
+<p>In this example, the data are split into 320x320 pixel tiles with no overlap. Also set the <code>min_bbox_area</code> to 8 pixels so too small objects are discarded.</p>
+<section id="cli" class="level3">
+<h3 class="anchored" data-anchor-id="cli">CLI</h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">geo2ml_create_yolo_dataset</span> <span class="dt">\</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>example_data/workflow_examples/104_28_Hiidenportti_Chunk1_orto.tif <span class="dt">\</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>example_data/workflow_examples/104_28_Hiidenportti_Chunk1_orto.geojson layer <span class="dt">\</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>example_data/workflow_examples/yolo/train <span class="at">--gridsize_x</span> 320 <span class="at">--gridsize_y</span> 320 <span class="dt">\</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>--ann_format polygon <span class="at">--min_bbox_area</span> 8</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="ex">geo2ml_create_yolo_dataset</span> <span class="dt">\</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>example_data/workflow_examples/104_42_Hiidenportti_Chunk5_orto.tif <span class="dt">\</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>example_data/workflow_examples/104_42_Hiidenportti_Chunk5_orto.geojson layer <span class="dt">\</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>example_data/workflow_examples/yolo/test <span class="at">--gridsize_x</span> 320 <span class="at">--gridsize_y</span> 320 <span class="dt">\</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>--ann_format polygon <span class="at">--min_bbox_area</span> 8</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="python" class="level3">
+<h3 class="anchored" data-anchor-id="python">Python</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> geo2ml.scripts.data <span class="im">import</span> create_yolo_dataset</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>outpath <span class="op">=</span> path_to_data<span class="op">/</span><span class="st">'yolo'</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>create_yolo_dataset(raster_path<span class="op">=</span>train_raster, polygon_path<span class="op">=</span>train_shp, target_column<span class="op">=</span><span class="st">'layer'</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                    outpath<span class="op">=</span>outpath<span class="op">/</span><span class="st">'train'</span>, save_grid<span class="op">=</span><span class="va">False</span>, gridsize_x<span class="op">=</span><span class="dv">320</span>, gridsize_y<span class="op">=</span><span class="dv">320</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                    ann_format<span class="op">=</span><span class="st">'polygon'</span>, min_bbox_area<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>create_yolo_dataset(raster_path<span class="op">=</span>test_raster, polygon_path<span class="op">=</span>test_shp, target_column<span class="op">=</span><span class="st">'layer'</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                    outpath<span class="op">=</span>outpath<span class="op">/</span><span class="st">'test'</span>, save_grid<span class="op">=</span><span class="va">False</span>, gridsize_x<span class="op">=</span><span class="dv">320</span>, gridsize_y<span class="op">=</span><span class="dv">320</span>,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>                    ann_format<span class="op">=</span><span class="st">'polygon'</span>, min_bbox_area<span class="op">=</span><span class="dv">8</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"627f2a32228846109a42413835ccd6f6","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"9f4e839a3d2b4890aa15078f5c52790c","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"abac99edad6544048a06c3f83b38da7e","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"fb8142cfbc5a4fe6aca9f54a36270bd1","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"f332f95da72645c8924e242285456272","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"a0110773f8754a4ebae0f6a0cb9de471","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+</div>
+</section>
+</section>
+<section id="dataset-structure" class="level2">
+<h2 class="anchored" data-anchor-id="dataset-structure">Dataset structure</h2>
+<p>Above creates the dataset to <code>path_to_data/'yolo'</code>, so that it contains folders <code>train</code> and <code>test</code>. Both of these folders contain</p>
+<ul>
+<li>folder <code>images</code>, which contains the tiled raster patches</li>
+<li>folder <code>vectors</code>, which contain geojson-files corresponding to each file in <code>images</code>, if the location contains any annotations</li>
+<li>folder <code>labels</code>, which contain the annotations in YOLO format</li>
+<li>file <code>yolo.yaml</code>, which can be used as a template for the dataset description file</li>
+</ul>
+</section>
+<section id="create-yolo.yaml-for-the-dataset" class="level2">
+<h2 class="anchored" data-anchor-id="create-yolo.yaml-for-the-dataset">Create yolo.yaml for the dataset</h2>
+<p>Create a <code>yolo.yaml</code> file using the below template. Autogeneration for this might be added later.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3: list: [path/to_imgs1, path_to_imgs2, ..]</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">path</span><span class="kw">:</span><span class="at"> workflow_examples/yolo/</span><span class="co"> # dataset root dir </span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">train</span><span class="kw">:</span><span class="at"> train</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">val</span><span class="kw">:</span><span class="at"> test</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">test</span><span class="kw">:</span><span class="at"> test</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Classes</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span><span class="kw">:</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">0</span><span class="kw">:</span><span class="at"> groundwood</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">1</span><span class="kw">:</span><span class="at"> uprightwood</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>It is advisable to use absolute path as the <code>path:</code> variable, as <code>ultralytics</code> otherwise assumes that <code>path</code> is relative to the <code>datasets_dir</code> in your settings.</p>
+</section>
+<section id="train-the-model" class="level2">
+<h2 class="anchored" data-anchor-id="train-the-model">Train the model</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ultralytics <span class="im">import</span> YOLO</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>As an example, train <code>yolov8n-seg.pt</code> for 30 epochs with 640x640px images and batch size of 4 (due to GPU constraints).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> YOLO(<span class="st">'yolov8n-seg.pt'</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> model.train(data<span class="op">=</span>path_to_data<span class="op">/</span><span class="st">'yolo/yolo.yaml'</span>, epochs<span class="op">=</span><span class="dv">30</span>, imgsz<span class="op">=</span><span class="dv">640</span>, batch<span class="op">=</span><span class="dv">4</span>, </span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                      optimizer<span class="op">=</span><span class="st">'auto'</span>, project<span class="op">=</span>path_to_data<span class="op">/</span><span class="st">'yolo/runs'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Ultralytics YOLOv8.0.149 🚀 Python-3.11.4 torch-2.0.1 CUDA:0 (NVIDIA RTX A2000 8GB Laptop GPU, 8192MiB)
+engine/trainer: task=segment, mode=train, model=yolov8n-seg.pt, data=example_data/workflow_examples/yolo/yolo.yaml, epochs=30, patience=50, batch=4, imgsz=640, save=True, save_period=-1, cache=False, device=None, workers=8, project=example_data/workflow_examples/yolo/runs, name=None, exist_ok=False, pretrained=True, optimizer=auto, verbose=True, seed=0, deterministic=True, single_cls=False, rect=False, cos_lr=False, close_mosaic=10, resume=False, amp=True, fraction=1.0, profile=False, overlap_mask=True, mask_ratio=4, dropout=0.0, val=True, split=val, save_json=False, save_hybrid=False, conf=None, iou=0.7, max_det=300, half=False, dnn=False, plots=True, source=None, show=False, save_txt=False, save_conf=False, save_crop=False, show_labels=True, show_conf=True, vid_stride=1, line_width=None, visualize=False, augment=False, agnostic_nms=False, classes=None, retina_masks=False, boxes=True, format=torchscript, keras=False, optimize=False, int8=False, dynamic=False, simplify=False, opset=None, workspace=4, nms=False, lr0=0.01, lrf=0.01, momentum=0.937, weight_decay=0.0005, warmup_epochs=3.0, warmup_momentum=0.8, warmup_bias_lr=0.1, box=7.5, cls=0.5, dfl=1.5, pose=12.0, kobj=1.0, label_smoothing=0.0, nbs=64, hsv_h=0.015, hsv_s=0.7, hsv_v=0.4, degrees=0.0, translate=0.1, scale=0.5, shear=0.0, perspective=0.0, flipud=0.0, fliplr=0.5, mosaic=1.0, mixup=0.0, copy_paste=0.0, cfg=None, tracker=botsort.yaml, save_dir=example_data/workflow_examples/yolo/runs/train3
+Overriding model.yaml nc=80 with nc=2
+
+                   from  n    params  module                                       arguments                     
+  0                  -1  1       464  ultralytics.nn.modules.conv.Conv             [3, 16, 3, 2]                 
+  1                  -1  1      4672  ultralytics.nn.modules.conv.Conv             [16, 32, 3, 2]                
+  2                  -1  1      7360  ultralytics.nn.modules.block.C2f             [32, 32, 1, True]             
+  3                  -1  1     18560  ultralytics.nn.modules.conv.Conv             [32, 64, 3, 2]                
+  4                  -1  2     49664  ultralytics.nn.modules.block.C2f             [64, 64, 2, True]             
+  5                  -1  1     73984  ultralytics.nn.modules.conv.Conv             [64, 128, 3, 2]               
+  6                  -1  2    197632  ultralytics.nn.modules.block.C2f             [128, 128, 2, True]           
+  7                  -1  1    295424  ultralytics.nn.modules.conv.Conv             [128, 256, 3, 2]              
+  8                  -1  1    460288  ultralytics.nn.modules.block.C2f             [256, 256, 1, True]           
+  9                  -1  1    164608  ultralytics.nn.modules.block.SPPF            [256, 256, 5]                 
+ 10                  -1  1         0  torch.nn.modules.upsampling.Upsample         [None, 2, 'nearest']          
+ 11             [-1, 6]  1         0  ultralytics.nn.modules.conv.Concat           [1]                           
+ 12                  -1  1    148224  ultralytics.nn.modules.block.C2f             [384, 128, 1]                 
+ 13                  -1  1         0  torch.nn.modules.upsampling.Upsample         [None, 2, 'nearest']          
+ 14             [-1, 4]  1         0  ultralytics.nn.modules.conv.Concat           [1]                           
+ 15                  -1  1     37248  ultralytics.nn.modules.block.C2f             [192, 64, 1]                  
+ 16                  -1  1     36992  ultralytics.nn.modules.conv.Conv             [64, 64, 3, 2]                
+ 17            [-1, 12]  1         0  ultralytics.nn.modules.conv.Concat           [1]                           
+ 18                  -1  1    123648  ultralytics.nn.modules.block.C2f             [192, 128, 1]                 
+ 19                  -1  1    147712  ultralytics.nn.modules.conv.Conv             [128, 128, 3, 2]              
+ 20             [-1, 9]  1         0  ultralytics.nn.modules.conv.Concat           [1]                           
+ 21                  -1  1    493056  ultralytics.nn.modules.block.C2f             [384, 256, 1]                 
+ 22        [15, 18, 21]  1   1004470  ultralytics.nn.modules.head.Segment          [2, 32, 64, [64, 128, 256]]   
+YOLOv8n-seg summary: 261 layers, 3264006 parameters, 3263990 gradients
+
+Transferred 381/417 items from pretrained weights
+TensorBoard: Start with 'tensorboard --logdir example_data/workflow_examples/yolo/runs/train3', view at http://localhost:6006/
+AMP: running Automatic Mixed Precision (AMP) checks with YOLOv8n...
+AMP: checks passed ✅
+train: Scanning /mnt/d/Users/E1005164/point-eo-nbdev/nbs/example_data/workflow_examples/yolo/train/labels
+val: Scanning /mnt/d/Users/E1005164/point-eo-nbdev/nbs/example_data/workflow_examples/yolo/test/labels.ca
+Plotting labels to example_data/workflow_examples/yolo/runs/train3/labels.jpg... 
+optimizer: AdamW(lr=0.001667, momentum=0.9) with parameter groups 66 weight(decay=0.0), 77 weight(decay=0.0005), 76 bias(decay=0.0)
+Image sizes 640 train, 640 val
+Using 4 dataloader workers
+Logging results to example_data/workflow_examples/yolo/runs/train3
+Starting training for 30 epochs...
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+       1/30      1.04G      2.028      2.932      4.046      1.738         16        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543       0.79     0.0346     0.0896     0.0374      0.848     0.0412      0.109      0.035
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+       2/30      1.07G      1.785      2.229      3.059      1.466         17        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.376      0.413      0.309      0.159      0.369       0.39      0.305      0.124
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+       3/30      0.94G      1.917      2.168      3.047      1.581         14        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543       0.53      0.306      0.314      0.159      0.532      0.303      0.303      0.146
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+       4/30      0.94G      1.879       2.17      2.744      1.548         14        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.367      0.399      0.336      0.165      0.389      0.369      0.335       0.15
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+       5/30     0.963G      1.933      2.116      2.664      1.606          8        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543        0.5      0.268      0.328      0.158      0.433      0.245      0.293       0.13
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+       6/30      1.09G      1.889      2.087      2.638       1.57          8        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.455       0.38      0.334      0.183      0.442      0.367      0.321      0.152
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+       7/30      0.94G      1.808      1.984      2.336      1.549         12        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543       0.52      0.472      0.469      0.246      0.503      0.428      0.435      0.195
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+       8/30     0.937G      1.785      2.071      2.228      1.524         14        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.606      0.523      0.563      0.299        0.6      0.518      0.535      0.243
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+       9/30      0.94G      1.745      1.941      2.165      1.495         14        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.606      0.476      0.516      0.272      0.598      0.473      0.499      0.228
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      10/30      1.07G      1.718      1.917      2.156        1.5         12        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.506      0.473      0.451      0.245      0.507      0.467      0.443      0.221
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      11/30     0.942G      1.637       1.81      1.995      1.406         13        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.455      0.501      0.456       0.26      0.456      0.451      0.442      0.212
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      12/30     0.937G      1.681      1.782      2.008      1.462          6        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.522       0.45      0.479      0.269      0.515      0.431      0.452      0.224
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      13/30     0.937G      1.642      1.845      1.985      1.419         11        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.603      0.483      0.523      0.295      0.609      0.487      0.519      0.254
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      14/30     0.937G      1.597      1.759      1.887      1.389         18        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.628      0.439      0.506       0.29      0.636      0.429        0.5      0.239
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      15/30      0.94G      1.571      1.794      1.768       1.41         21        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.629      0.512      0.565      0.323      0.615      0.498      0.536      0.249
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      16/30     0.935G      1.538      1.771      1.805      1.364         16        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.602      0.513       0.54      0.299      0.604      0.515      0.524      0.253
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      17/30      0.94G      1.497      1.795      1.666      1.326         17        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.544      0.524      0.528      0.315      0.557      0.482       0.51      0.256
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      18/30      1.07G      1.476      1.745      1.675      1.346         11        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.605      0.557      0.559      0.332      0.587      0.541      0.532      0.269
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      19/30     0.937G      1.475      1.722       1.63      1.301         24        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.604      0.568      0.577      0.334      0.592       0.56       0.55      0.268
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      20/30     0.935G      1.489      1.785      1.692       1.34         13        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.591      0.556      0.543      0.323      0.587      0.545       0.52      0.248
+Closing dataloader mosaic
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      21/30     0.937G      1.516      1.451      1.846      1.426          9        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.585      0.536      0.568      0.329      0.578      0.528      0.554       0.27
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      22/30     0.935G      1.524        1.4      1.707       1.41          8        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.616      0.577      0.599      0.351      0.626      0.545      0.574      0.281
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      23/30     0.937G      1.444      1.397      1.702      1.358          5        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.604      0.528      0.562      0.337      0.627      0.512      0.551      0.272
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      24/30     0.935G      1.421      1.349      1.777      1.345          6        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.609      0.512      0.543      0.318      0.611      0.502      0.526      0.265
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      25/30     0.935G      1.397      1.358      1.758       1.32         12        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.617      0.531      0.571      0.329       0.63      0.514      0.561      0.277
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      26/30     0.937G      1.353      1.332      1.588      1.308         11        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.617      0.577      0.594       0.36      0.591      0.553      0.572      0.291
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      27/30     0.937G      1.348      1.267      1.692       1.32          3        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.578      0.574      0.571      0.352      0.582       0.56      0.558      0.288
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      28/30     0.935G      1.337      1.293      1.587      1.327          4        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.571      0.551      0.565      0.337      0.576      0.542      0.551      0.278
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      29/30     0.935G      1.317      1.269      1.588      1.265         13        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.624      0.564      0.599      0.367      0.617      0.552      0.588      0.302
+
+      Epoch    GPU_mem   box_loss   seg_loss   cls_loss   dfl_loss  Instances       Size
+      30/30     0.933G      1.366      1.325      1.503      1.319         14        640: 100%|██████████
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.644      0.562      0.612      0.376      0.645      0.559      0.603      0.304
+
+30 epochs completed in 0.107 hours.
+Optimizer stripped from example_data/workflow_examples/yolo/runs/train3/weights/last.pt, 6.8MB
+Optimizer stripped from example_data/workflow_examples/yolo/runs/train3/weights/best.pt, 6.8MB
+
+Validating example_data/workflow_examples/yolo/runs/train3/weights/best.pt...
+Ultralytics YOLOv8.0.149 🚀 Python-3.11.4 torch-2.0.1 CUDA:0 (NVIDIA RTX A2000 8GB Laptop GPU, 8192MiB)
+YOLOv8n-seg summary (fused): 195 layers, 3258454 parameters, 0 gradients
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)     Mask(P      
+                   all        117        543      0.645      0.561      0.612      0.376      0.644      0.558      0.602      0.305
+            groundwood        117        419      0.599      0.511      0.541      0.313      0.607      0.516      0.534       0.22
+           uprightwood        117        124       0.69      0.611      0.684       0.44       0.68        0.6       0.67       0.39
+Speed: 0.7ms preprocess, 7.6ms inference, 0.0ms loss, 2.7ms postprocess per image
+Results saved to example_data/workflow_examples/yolo/runs/train3</code></pre>
+</div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script type="application/vnd.jupyter.widget-state+json">
+{"state":{},"version_major":2,"version_minor":0}
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
