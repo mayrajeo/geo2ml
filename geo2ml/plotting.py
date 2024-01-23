@@ -14,7 +14,7 @@ import pandas as pd
 import rasterio as rio
 import rasterio.plot as rioplot
 import matplotlib.patches as mpatches
-from PIL import Image, ImageDraw
+from PIL import Image
 
 # %% ../nbs/31_plotting.ipynb 6
 def plot_coco_instance(
@@ -110,8 +110,8 @@ def plot_yolo_instance(
 ) -> plt.Axes:
     "Plot yolo format instance to `ax` and return it. If `classes` are provided show them in legend"
     image = Image.open(image_fname)
+    ax.imshow(image)
     w, h = image.size
-    plotted_image = ImageDraw.Draw(image)
     cmap = plt.get_cmap("tab20")
     with open(annotation_fname) as f:
         anns = f.read().split("\n")[:-1]
@@ -139,21 +139,32 @@ def plot_yolo_instance(
         for ann in transformed_annotations:
             obj_cls, x0, y0, x1, y1 = ann
             c = tuple((np.array(cmap(obj_cls)) * 255).astype(np.uint8))
-            plotted_image.rectangle(((x0, y0), (x1, y1)), outline=c)
+            ax.add_patch(
+                mpatches.Rectangle(
+                    (x0, y0),
+                    x1 - x0,
+                    y1 - y0,
+                    fill=False,
+                    linestyle="--",
+                    linewidth=2,
+                    edgecolor=np.array(cmap(obj_cls)),
+                )
+            )
 
     elif ann_type == "polygon" or ann_type == "rotated box":
         w, h = image.size
-        plotted_image = ImageDraw.Draw(image)
-
         for ann in anns:
             obj_cls = ann[0]
             xcoords = [ann[i] * w for i in range(1, len(ann), 2)]
             ycoords = [ann[i] * h for i in range(2, len(ann) + 1, 2)]
             xcoords.append(xcoords[0])
             ycoords.append(ycoords[0])
-            c = tuple((np.array(cmap(obj_cls)) * 255).astype(np.uint8))
-            plotted_image.polygon(list(zip(xcoords, ycoords)), outline=c)
-
+            coords = list(zip(xcoords, ycoords))
+            ax.add_patch(
+                mpatches.Polygon(
+                    coords, fill=False, linewidth=1.5, edgecolor=np.array(cmap(obj_cls))
+                )
+            )
     if classes:
         ax.legend(
             handles=[
@@ -161,5 +172,4 @@ def plot_yolo_instance(
                 for i in range_of(classes)
             ]
         )
-    ax.imshow(np.array(image))
     return ax
