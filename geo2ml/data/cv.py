@@ -186,7 +186,7 @@ def shp_to_coco(
         json.dump(coco_dict, f)
     return
 
-# %% ../../nbs/13_data.cv.ipynb 19
+# %% ../../nbs/13_data.cv.ipynb 18
 def coco_to_shp(
     coco_data: Path | str, outpath: Path, raster_path: Path, downsample_factor: int = 1
 ):
@@ -297,7 +297,7 @@ def coco_to_shp(
         tfmd_gdf.to_file(outpath / f'{i["file_name"][:-4]}.geojson', driver="GeoJSON")
     return
 
-# %% ../../nbs/13_data.cv.ipynb 23
+# %% ../../nbs/13_data.cv.ipynb 22
 def shp_to_coco_results(
     prediction_path: Path,
     raster_path: Path,
@@ -368,7 +368,7 @@ def shp_to_coco_results(
         json.dump(results, f)
     return
 
-# %% ../../nbs/13_data.cv.ipynb 28
+# %% ../../nbs/13_data.cv.ipynb 27
 def shp_to_yolo(
     raster_path: Path,
     shp_path: Path,
@@ -460,7 +460,7 @@ def shp_to_yolo(
         for n in names.keys():
             dest.write(f"  {names[n]}: {n}\n")
 
-# %% ../../nbs/13_data.cv.ipynb 34
+# %% ../../nbs/13_data.cv.ipynb 33
 def yolo_to_shp(
     prediction_path: Path,
     raster_path: Path,
