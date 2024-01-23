@@ -59,7 +59,7 @@ class Tiler:
         self.rasterized_vector_path = self.outpath / "rasterized_vectors"
 
     def tile_raster(
-        self, path_to_raster: str, allow_partial_data: bool = False
+        self, path_to_raster: Path | str, allow_partial_data: bool = False
     ) -> None:
         "Tiles specified raster to `self.gridsize_x` times `self.gridsize_y` grid, with `self.overlap` pixel overlap"
         names = []
@@ -110,7 +110,7 @@ class Tiler:
 
     def tile_vector(
         self,
-        path_to_vector: str,
+        path_to_vector: Path | str,
         min_area_pct: float = 0.0,
         gpkg_layer: str = None,
         output_format: str = "geojson",
@@ -124,7 +124,7 @@ class Tiler:
                 "No raster grid specified, use Tiler.tile_raster to determine grid limits"
             )
 
-        if path_to_vector.endswith(".gpkg") and not gpkg_layer:
+        if Path(path_to_vector).suffix == ".gpkg" and not gpkg_layer:
             raise Exception(
                 "`sampling_locations` is .gpkg but no `gpkg_layer` specified"
             )
@@ -170,8 +170,8 @@ class Tiler:
 
     def tile_and_rasterize_vector(
         self,
-        path_to_raster: str,
-        path_to_vector: str,
+        path_to_raster: Path | str,
+        path_to_vector: Path | str,
         column: str,
         gpkg_layer: str = None,
         keep_bg_only: bool = False,
@@ -186,7 +186,7 @@ class Tiler:
                 "No raster grid specified, use Tiler.tile_raster to determine grid limits"
             )
 
-        if path_to_vector.endswith(".gpkg") and not gpkg_layer:
+        if Path(path_to_vector).suffix == ".gpkg" and not gpkg_layer:
             raise Exception(
                 "`sampling_locations` is .gpkg but no `gpkg_layer` specified"
             )
@@ -227,7 +227,9 @@ class Tiler:
         return
 
 # %% ../../nbs/12_data.tiling.ipynb 30
-def untile_raster(path_to_targets: str, outfile: str, method: str = "first"):
+def untile_raster(
+    path_to_targets: Path | str, outfile: Path | str, method: str = "first"
+):
     """Merge multiple patches from `path_to_targets` into a single raster`"""
 
     rasters = [
@@ -269,12 +271,12 @@ def copy_sum(merged_data, new_data, merged_mask, new_mask, **kwargs):
 
 
 def untile_vector(
-    path_to_targets: str,
-    outpath: str,
+    path_to_targets: Path | str,
+    outpath: Path | str,
     non_max_suppression_thresh: float = 0.0,
     nms_criterion: str = "score",
 ):
-    "Create single GIS-filie from a directory of predicted .shp or .geojson files"
+    "Create single GIS-file from a directory of predicted .shp or .geojson files"
     if os.path.isdir(path_to_targets):  # directory
         pred_files = [
             f for f in os.listdir(path_to_targets) if f.endswith((".shp", ".geojson"))
@@ -286,7 +288,7 @@ def untile_vector(
                 gdf = temp_gdf
             else:
                 gdf = pd.concat((gdf, temp_gdf))
-    elif path_to_targets.endswith("gpkg"):  # geopackage
+    elif Path(path_to_targets).suffix == ".gpkg":  # geopackage
         layers = fiona.listlayers(path_to_targets)
         gdf = None
         for l in tqdm(layers):
@@ -295,7 +297,7 @@ def untile_vector(
                 gdf = temp_gdf
             else:
                 gdf = pd.concat((gdf, temp_gdf))
-    print(f"{len(gdf)} polygons before non-max suppression")
+    print(f"{len(gdf)} polygons")
     if non_max_suppression_thresh != 0:
         np_bounding_boxes = np.array([b.bounds for b in gdf.geometry])
         scores = gdf.score.values
@@ -306,7 +308,7 @@ def untile_vector(
             sort_criterion=nms_criterion,
         )
         gdf = gdf.iloc[idxs]
-    print(f"{len(gdf)} polygons after non-max suppression")
+        print(f"{len(gdf)} polygons after non-max suppression")
     if outpath.endswith("shp"):
         gdf.to_file(outpath)
     elif outpath.endswith("geojson"):
