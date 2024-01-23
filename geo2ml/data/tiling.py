@@ -288,7 +288,7 @@ def untile_vector(
                 gdf = temp_gdf
             else:
                 gdf = pd.concat((gdf, temp_gdf))
-    elif Path(path_to_targets).suffix == "gpkg":  # geopackage
+    elif Path(path_to_targets).suffix == ".gpkg":  # geopackage
         layers = fiona.listlayers(path_to_targets)
         gdf = None
         for l in tqdm(layers):
