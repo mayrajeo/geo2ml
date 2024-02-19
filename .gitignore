@@ -152,3 +152,7 @@ checklink/cookies.txt
 
 # Workflow example data
 nbs/workflow_examples/
+
+# Pytorch models
+
+*.pt

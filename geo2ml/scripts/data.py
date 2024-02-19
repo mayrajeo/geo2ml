@@ -5,9 +5,9 @@ __all__ = ['sample_points', 'sample_polygons', 'create_raster_dataset', 'create_
 
 # %% ../../nbs/41_scripts.data.ipynb 3
 from fastcore.script import *
+import rasterio as rio
 import datetime
 import geopandas as gpd
-import rasterio as rio
 from pathlib import Path
 import os
 
@@ -139,6 +139,8 @@ def create_raster_dataset(
     mask_path: Path,  # Path to corresponding mask raster or polygon layer. Must have the same extent and resolution as the raster in `raster_path`
     outpath: Path,  # Where to save the results
     save_grid: bool = False,  # Whether to save the tiling grid
+    allow_partial_data: bool = False,  # Whether to create tiles that have only partial data
+    keep_bg_only: bool = False,  # Keep the mask chips that contain only the background class
     target_column: str = None,  # If mask_path contains vector data, identifier of the column containing the class information
     gpkg_layer: str = None,  # If `polygon_path` is a geopackage, specify the layer used. Ignored otherwise.
     gridsize_x: int = 256,  # Size of tiles in x-axis in pixels
@@ -153,7 +155,7 @@ def create_raster_dataset(
         gridsize_y=gridsize_y,
         overlap=(overlap_x, overlap_y),
     )
-    tiler.tile_raster(raster_path)
+    tiler.tile_raster(raster_path, allow_partial_data=allow_partial_data)
 
     polygon_extensions = [".shp", ".geojson", ".gpkg"]
     raster_extensions = [".tif"]
@@ -167,7 +169,11 @@ def create_raster_dataset(
                 "If mask_path contains polygon data, target_column must be provided"
             )
         tiler.tile_and_rasterize_vector(
-            raster_path, mask_path, column=target_column, gpkg_layer=gpkg_layer
+            raster_path,
+            mask_path,
+            column=target_column,
+            gpkg_layer=gpkg_layer,
+            keep_bg_only=keep_bg_only,
         )
         os.rename(tiler.rasterized_vector_path, outpath / "mask_images")
     if save_grid:
@@ -183,7 +189,9 @@ def create_coco_dataset(
     dataset_name: str,  # Name of the dataset
     gpkg_layer: str = None,  # If `polygon_path` is a geopackage, specify the layer used. Ignored otherwise.
     min_area_pct: float = 0.0,  # How small polygons keep after tiling?
+    output_format: str = "geojson",  # Which format to use for saving, either 'geojson' or 'gpkg'
     save_grid: bool = False,  # Should tiling grid be saved
+    allow_partial_data: bool = False,  # Whether to create tiles that have only partial image data
     gridsize_x: int = 320,  # Size of tiles in x-axis in pixels
     gridsize_y: int = 320,  # Size of tiles in y-axis in pixels
     overlap_x: int = 0,  # Overlap of tiles in x-axis in pixels
@@ -198,8 +206,13 @@ def create_coco_dataset(
         gridsize_y=gridsize_y,
         overlap=(overlap_x, overlap_y),
     )
-    tiler.tile_raster(raster_path)
-    tiler.tile_vector(polygon_path)
+    tiler.tile_raster(raster_path, allow_partial_data=allow_partial_data)
+    tiler.tile_vector(
+        polygon_path,
+        min_area_pct=min_area_pct,
+        gpkg_layer=gpkg_layer,
+        output_format=output_format,
+    )
 
     cats = gpd.read_file(polygon_path)[target_column].unique()
 
@@ -215,9 +228,16 @@ def create_coco_dataset(
     }
 
     coco_licenses = {}
+
+    match output_format:
+        case "geojson":
+            vector_path = outpath / "vectors"
+        case "gpkg":
+            vector_path = outpath / "vectors.gpkg"
+
     shp_to_coco(
         outpath / "images",
-        outpath / "vectors",
+        vector_path,
         outpath,
         label_col=target_column,
         dataset_name=dataset_name,
@@ -239,7 +259,9 @@ def create_yolo_dataset(
     dataset_name: str = None,  # Optional name of the dataset
     gpkg_layer: str = None,  # If `polygon_path` is a geopackage, specify the layer used. Ignored otherwise.
     min_area_pct: float = 0.0,  # How small polygons keep after tiling?
-    save_grid: bool = False,  # Should tiling grid be saved?
+    output_format: str = "geojson",  # Which format to use for saving, either 'geojson' or 'gpkg'
+    save_grid: bool = False,  # Should tiling grid be saved
+    allow_partial_data: bool = False,  # Whether to create tiles that have only partial image data
     gridsize_x: int = 320,  # Size of tiles in x-axis, pixels
     gridsize_y: int = 320,  # Size fo tiles in y-axis, pixels
     overlap_x: int = 0,  # Overlap of tiles in x-axis
@@ -254,12 +276,24 @@ def create_yolo_dataset(
         gridsize_y=gridsize_y,
         overlap=(overlap_x, overlap_y),
     )
-    tiler.tile_raster(raster_path)
-    tiler.tile_vector(polygon_path)
+    tiler.tile_raster(raster_path, allow_partial_data=allow_partial_data)
+    tiler.tile_vector(
+        polygon_path,
+        min_area_pct=min_area_pct,
+        gpkg_layer=gpkg_layer,
+        output_format=output_format,
+    )
     cats = gpd.read_file(polygon_path)[target_column].unique()
+
+    match output_format:
+        case "geojson":
+            vector_path = outpath / "vectors"
+        case "gpkg":
+            vector_path = outpath / "vectors.gpkg"
+
     shp_to_yolo(
         outpath / "images",
-        outpath / "vectors",
+        vector_path,
         outpath,
         label_col=target_column,
         names=cats,

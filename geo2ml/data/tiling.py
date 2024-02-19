@@ -4,6 +4,7 @@
 __all__ = ['Tiler', 'untile_raster', 'copy_sum', 'untile_vector']
 
 # %% ../../nbs/12_data.tiling.ipynb 4
+import rasterio as rio
 import numpy as np
 import itertools
 import pandas as pd
@@ -14,7 +15,6 @@ from pathlib import Path
 from tqdm.auto import tqdm
 import shapely
 from shapely.geometry import box
-import rasterio as rio
 import rasterio.mask as rio_mask
 import rasterio.windows as rio_windows
 import fiona

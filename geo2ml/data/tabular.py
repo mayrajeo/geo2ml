@@ -5,10 +5,10 @@ __all__ = ['array_to_longform', 'drop_small_classes', 'sample_raster_with_points
 
 # %% ../../nbs/10_data.tabular.ipynb 3
 from fastcore.basics import *
+import rasterio as rio
 import pandas as pd
 import numpy as np
 import geopandas as gpd
-import rasterio as rio
 import logging
 from rasterstats import zonal_stats
 from pathlib import Path
