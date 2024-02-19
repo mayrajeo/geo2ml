@@ -5,13 +5,13 @@ __all__ = ['plot_coco_instance', 'plot_yolo_instance']
 
 # %% ../nbs/31_plotting.ipynb 3
 from fastcore.basics import *
+import rasterio as rio
 import os
 import sys
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import rasterio as rio
 import rasterio.plot as rioplot
 import matplotlib.patches as mpatches
 from PIL import Image

@@ -5,6 +5,7 @@ __all__ = ['shp_to_coco', 'coco_to_shp', 'shp_to_coco_results', 'shp_to_yolo', '
 
 # %% ../../nbs/13_data.cv.ipynb 3
 from .coordinates import *
+import rasterio as rio
 from pathlib import Path
 import os
 import yaml
@@ -13,7 +14,6 @@ from fastcore.basics import *
 from tqdm.auto import tqdm
 import geopandas as gpd
 import pandas as pd
-import rasterio as rio
 import numpy as np
 from shapely.geometry import box
 import datetime
@@ -351,9 +351,11 @@ def shp_to_coco_results(
                 "image_id": image_id,
                 "category_id": getattr(row, label_col),
                 "segmentation": None,
-                "score": np.round(getattr(row, "score"), 5)
-                if "score" in tfmd_gdf.columns
-                else 0.0,
+                "score": (
+                    np.round(getattr(row, "score"), 5)
+                    if "score" in tfmd_gdf.columns
+                    else 0.0
+                ),
             }
             ann = _process_shp_to_coco(
                 image_id, getattr(row, label_col), 0, row.geometry, rotated_bbox
