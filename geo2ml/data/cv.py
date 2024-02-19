@@ -351,9 +351,11 @@ def shp_to_coco_results(
                 "image_id": image_id,
                 "category_id": getattr(row, label_col),
                 "segmentation": None,
-                "score": np.round(getattr(row, "score"), 5)
-                if "score" in tfmd_gdf.columns
-                else 0.0,
+                "score": (
+                    np.round(getattr(row, "score"), 5)
+                    if "score" in tfmd_gdf.columns
+                    else 0.0
+                ),
             }
             ann = _process_shp_to_coco(
                 image_id, getattr(row, label_col), 0, row.geometry, rotated_bbox

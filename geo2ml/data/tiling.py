@@ -77,6 +77,7 @@ class Tiler:
                     enumerate(range(0, x, self.gridsize_x - self.overlap[0])),
                 )
             ):
+
                 if dy + self.gridsize_y > y and not allow_partial_data:
                     continue
                 if dx + self.gridsize_x > x and not allow_partial_data:
@@ -155,9 +156,11 @@ class Tiler:
             if len(tempvector) == 0:
                 continue
             tempvector["geometry"] = tempvector.apply(
-                lambda row: fix_multipolys(row.geometry)
-                if row.geometry.geom_type == "MultiPolygon"
-                else shapely.geometry.Polygon(row.geometry.exterior),
+                lambda row: (
+                    fix_multipolys(row.geometry)
+                    if row.geometry.geom_type == "MultiPolygon"
+                    else shapely.geometry.Polygon(row.geometry.exterior)
+                ),
                 axis=1,
             )
             if output_format == "geojson":
