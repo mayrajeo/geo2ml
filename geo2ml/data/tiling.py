@@ -86,13 +86,17 @@ class Tiler:
                     (dy, dy + self.gridsize_y), (dx, dx + self.gridsize_x)
                 )
                 prof = src.profile.copy()
-
+                if src.gcps[1]:
+                    in_crs = src.gcps[1]
+                else:
+                    in_crs = src.crs
                 prof.update(
                     height=window.height,
                     width=window.width,
                     transform=rio_windows.transform(window, src.transform),
                     compress="lzw",
                     predictor=2,
+                    crs=in_crs,
                 )
                 fname = f"R{iy}C{ix}"
                 data = src.read(window=window)
@@ -104,9 +108,8 @@ class Tiler:
                     dest.write(data)
                     polys.append(box(*dest.bounds))
                 names.append(fname)
-            self.grid = gpd.GeoDataFrame(
-                {"cell": names, "geometry": polys}, crs=src.crs
-            )
+
+            self.grid = gpd.GeoDataFrame({"cell": names, "geometry": polys}, crs=in_crs)
         return
 
     def tile_vector(
@@ -139,7 +142,7 @@ class Tiler:
             raise Exception("Unknown output format, must be either `geojson` or `gpkg`")
 
         vector = gpd.read_file(path_to_vector, layer=gpkg_layer)
-
+        vector = vector.to_crs(self.grid.crs)
         sindex = vector.sindex
         for row in tqdm(self.grid.itertuples()):
             possible_matches_index = list(sindex.intersection(row.geometry.bounds))
@@ -198,6 +201,7 @@ class Tiler:
             os.makedirs(self.rasterized_vector_path)
 
         vector = gpd.read_file(path_to_vector)
+        vector = vector.to_crs(self.grid.crs)
         le = LabelEncoder()
         vector["label"] = (
             le.fit_transform(vector[column].values) + 1
@@ -205,7 +209,7 @@ class Tiler:
         with open(self.outpath / "label_map.txt", "w") as f:
             for c, i in zip(le.classes_, le.transform(le.classes_)):
                 f.write(f"{c}: {i+1}\n")
-        for r in tqdm(os.listdir(self.raster_path)):
+        for r in tqdm([f for f in os.listdir(self.raster_path) if f.endswith("tif")]):
             with rio.open(self.raster_path / r) as src:
                 out_meta = src.meta
                 out_meta.update({"count": 1})
@@ -248,6 +252,10 @@ def untile_raster(
 
     for f in rasters:
         src = rio.open(f)
+        if src.gcps[1]:
+            in_crs = src.gcps[1]
+        else:
+            in_crs = src.crs
         files_to_mosaic.append(src)
 
     mosaic, out_tfm = rio_merge(files_to_mosaic, method=method)
@@ -259,7 +267,7 @@ def untile_raster(
             "height": mosaic.shape[1],
             "width": mosaic.shape[2],
             "transform": out_tfm,
-            "crs": src.crs,
+            "crs": in_crs,
         }
     )
 
