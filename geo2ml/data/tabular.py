@@ -56,9 +56,11 @@ def sample_raster_with_points(
     gdf = gpd.read_file(sampling_locations, layer=gpkg_layer)
 
     with rio.open(input_raster) as src:
-        assert str(gdf.crs) == str(
-            src.crs
-        ), "Sampling locations and input raster have different crs"
+        if src.gcps[1]:
+            in_crs = src.gcps[1]
+        else:
+            in_crs = src.crs
+        gdf = gdf.to_crs(in_crs)
         coords = [(x, y) for x, y in zip(gdf.geometry.x, gdf.geometry.y)]
         values = np.array([p for p in src.sample(coords)])
         prof = src.profile
@@ -104,9 +106,11 @@ def sample_raster_with_polygons(
 
     gdf = gpd.read_file(sampling_locations, layer=gpkg_layer)
     with rio.open(input_raster) as src:
-        assert str(gdf.crs) == str(
-            src.crs
-        ), "Sampling locations and input raster have different crs"
+        if src.gcps[1]:
+            in_crs = src.gcps[1]
+        else:
+            in_crs = src.crs
+        gdf = gdf.to_crs(in_crs)
         n_bands = src.count
         prof = src.profile
     zstats = []
