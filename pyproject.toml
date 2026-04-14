@@ -21,7 +21,6 @@ Documentation = "https://mayrajeo.github.io/geo2ml"
 [project.entry-points.nbdev]
 geo2ml = "geo2ml._modidx:d"
 
-
 [project.scripts]
 geo2ml_help = "geo2ml.cli:chelp"
 geo2ml_sample_points = "geo2ml.scripts.data:sample_points"
@@ -34,7 +33,7 @@ geo2ml_create_yolo_dataset = "geo2ml.scripts.data:create_yolo_dataset"
 version = {attr = "geo2ml.__version__"}
 
 [tool.setuptools.packages.find]
-include = ["geo2ml"]
+include = ["geo2ml*"]
 
 [tool.nbdev]
 custom_sidebar = true
