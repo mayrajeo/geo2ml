@@ -8,7 +8,7 @@ inputs:
   version:
     description: 'Version of python to set up'
     required: false
-    default: '3.10'
+    default: '3.12'
   skip_test:
     description: 'Skip tests?'
     required: false
@@ -25,8 +25,8 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.version }}
         cache: "pip"
@@ -55,9 +55,9 @@ runs:
         fi
         echo "Doing editable install..."
         if [ $TORCH_CPU ]; then
-          test -f setup.py && pip install -e ".[dev]" --extra-index-url https://download.pytorch.org/whl/cpu
+          pip install -e ".[dev]" --extra-index-url https://download.pytorch.org/whl/cpu
         else
-          test -f setup.py && pip install -e ".[dev]"
+          pip install -e ".[dev]"
         fi
         echo "Check we are starting with clean git checkout"
         if [[ `git status --porcelain -uno` ]]; then
@@ -66,22 +66,22 @@ runs:
           false
         fi
         echo "Trying to strip out notebooks"
-        nbdev_clean
+        nbdev-clean
         echo "Check that strip out was unnecessary"
         git status -s # display the status to see which nbs need cleaning up
         if [[ `git status --porcelain -uno` ]]; then
           git status -uno
-          echo -e "!!! Detected unstripped out notebooks\n!!!Remember to run nbdev_install_hooks"
+          echo -e "!!! Detected unstripped out notebooks\n!!!Remember to run nbdev-install_hooks"
           echo -e "This error can also happen if you are using an older version of nbdev relative to what is in CI.  Please try to upgrade nbdev with the command `pip install -U nbdev`"
           false
         fi
-        nbdev_export
+        nbdev-export
         if [[ `git status --porcelain -uno` ]]; then
-          echo "::error::Notebooks and library are not in sync.  Please run nbdev_export."
+          echo "::error::Notebooks and library are not in sync.  Please run nbdev-export."
           git status -uno
           git diff
           exit 1;
         fi
         if [ ! $SKIP_TEST ]; then
-          nbdev_test --flags "$FLAGS" --n_workers 1
+          nbdev-test --flags "$FLAGS" --n_workers 1
         fi
