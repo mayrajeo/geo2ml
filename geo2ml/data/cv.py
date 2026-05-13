@@ -294,7 +294,7 @@ def shp_to_yolo(raster_path:Path, shp_path:Path, outpath:Path, label_col:str, na
         if os.path.isdir(shp_path): gdf = gpd.read_file(shp_path/vector_tiles[i])
         elif shp_path.suffix == '.gpkg': gdf = gpd.read_file(shp_path, layer=layers[i])
         if ann_format == 'rotated box':
-            gdf['geometry'] = gdf.geometry.apply(lambda row: row.minimum_rotated_rectangle)
+            gdf['geometry'] = gdf.geometry.minimum_rotated_rectangle
         tfmd_gdf = gdf_to_px(gdf, raster_path/r, precision=3) # to pixel coordinates
         with rio.open(raster_path/r) as im:
             h, w = im.shape

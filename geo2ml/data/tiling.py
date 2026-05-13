@@ -126,15 +126,16 @@ class Tiler():
             tempvector = vector.iloc[possible_matches_index].copy()
             tempvector['orig_area'] = tempvector.geometry.area
             tempvector = tempvector.clip(row.geometry, keep_geom_type=True)
-
+            tempvector = tempvector[tempvector.geometry.geom_type.isin(['Polygon', 'MultiPolygon'])]
             if min_area_pct < 0 or min_area_pct > 1:
                 print('Invalid minimum area percentage set, defaulting to 0')
-            tempvector = tempvector[tempvector.geometry.area >= tempvector.orig_area * min_area_pct]
+            tempvector = tempvector[tempvector.geometry.area >= (tempvector.orig_area * min_area_pct)]
             # No annotations -> no output file
             if len(tempvector) == 0: continue            
-            tempvector['geometry'] = tempvector.apply(lambda row: fix_multipolys(row.geometry) 
-                                                      if row.geometry.geom_type == 'MultiPolygon'
-                                                      else shapely.geometry.Polygon(row.geometry.exterior), axis=1)
+            mask = tempvector.geometry.geom_type == 'MultiPolygon'
+            tempvector.loc[mask, 'geometry'] = tempvector.loc[mask, 'geometry'].map(fix_multipolys)
+            tempvector.loc[~mask, 'geometry'] = shapely.polygons(shapely.get_exterior_ring(tempvector.loc[~mask, 'geometry']))
+
             if output_format == 'geojson':
                 tempvector.to_file(f'{self.vector_path}/{row.cell}.geojson', driver='GeoJSON')
             elif output_format == 'gpkg':

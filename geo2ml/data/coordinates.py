@@ -93,12 +93,11 @@ def affine_transform_gdf(gdf:gpd.GeoDataFrame, affine_obj:affine.Affine, inverse
     """Adapted from solaris, transforms all geometries in GeoDataFrame to pixel coordinates from
     Georeferced coordinates and vice versa"""
     if 'geometry' not in gdf.columns: gdf = gdf.rename(columns={geom_col: 'geometry'})
-    gdf["geometry"] = gdf["geometry"].apply(convert_poly_coords,
-                                            affine_obj=affine_obj,
-                                            inverse=inverse)
+    gdf["geometry"] = gdf["geometry"].map(convert_poly_coords,
+                                          affine_obj=affine_obj,
+                                          inverse=inverse)
     if precision is not None:
-        gdf['geometry'] = gdf['geometry'].apply(
-            _reduce_geom_precision, precision=precision)
+        gdf['geometry'] = gdf['geometry'].map(_reduce_geom_precision, precision=precision)
 
     # the CRS is no longer valid - remove it
     gdf.crs = None
