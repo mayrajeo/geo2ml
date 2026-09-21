@@ -123,8 +123,8 @@ def shp_to_coco(raster_path:Path, shp_path:Path, outpath:Path, label_col:str,
         vector_tiles = [f for f in sorted(os.listdir(shp_path)) if f.endswith(('.shp', '.geojson'))]
         raster_tiles = sorted([f for f in os.listdir(raster_path) if f.split('.')[0] in [v.split('.')[0] for v in vector_tiles]])
     elif shp_path.suffix == '.gpkg':
-        layers = sorted(gpd.list_layers(shp_path)) # Assume that shp_path contains a geopackage with layers named after images
-        raster_tiles = sorted([f for f in os.listdir(raster_path) if f.split('.')[0] in layers.name])
+        layers = sorted(gpd.list_layers(shp_path).name) # Assume that shp_path contains a geopackage with layers named after images
+        raster_tiles = sorted([f for f in os.listdir(raster_path) if f.split('.')[0] in layers])
     ann_id = 1
     for i, r in tqdm(enumerate(raster_tiles)):
         tile_anns = []
