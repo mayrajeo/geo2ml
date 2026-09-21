@@ -135,9 +135,7 @@ class Tiler():
             mask = tempvector.geometry.geom_type == 'MultiPolygon'
             tempvector.loc[mask, 'geometry'] = tempvector.loc[mask, 'geometry'].map(fix_multipolys)
             tempvector.loc[~mask, 'geometry'] = shapely.polygons(shapely.get_exterior_ring(tempvector.loc[~mask, 'geometry']))
-
-            tempvector
-            
+           
             if output_format == 'geojson':
                 tempvector.to_file(f'{self.vector_path}/{row.cell}.geojson', driver='GeoJSON')
             elif output_format == 'gpkg':
