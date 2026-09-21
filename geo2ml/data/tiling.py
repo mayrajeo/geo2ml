@@ -21,7 +21,6 @@ import shapely
 from shapely.geometry import box
 import rasterio.mask as rio_mask
 import rasterio.windows as rio_windows
-import fiona
 from rasterio.merge import merge as rio_merge
 from sklearn.preprocessing import LabelEncoder
 from .postproc import *
@@ -228,9 +227,9 @@ def untile_vector(path_to_targets:Path|str, outpath:Path|str, non_max_suppressio
             if gdf is None: gdf = temp_gdf
             else: gdf = pd.concat((gdf,temp_gdf))
     elif Path(path_to_targets).suffix == '.gpkg': # geopackage
-        layers = fiona.listlayers(path_to_targets)
+        layers = gpd.list_layers(path_to_targets)
         gdf = None
-        for l in tqdm(layers):
+        for l in tqdm(layers.name):
             temp_gdf = gpd.read_file(path_to_targets, layer=l)
             if gdf is None: gdf = temp_gdf
             else: gdf = pd.concat((gdf, temp_gdf))

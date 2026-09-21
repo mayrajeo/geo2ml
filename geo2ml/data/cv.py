@@ -25,7 +25,7 @@ from skimage import measure
 from pycocotools.mask import frPyObjects
 from shapely.geometry import MultiPolygon, Polygon
 import math
-import fiona
+
 
 # %% ../../nbs/13_data.cv.ipynb #a5d6400a-1cf3-46c0-ad15-d0f0f8b9048e
 def calc_bearing(point1, point2):
@@ -123,8 +123,8 @@ def shp_to_coco(raster_path:Path, shp_path:Path, outpath:Path, label_col:str,
         vector_tiles = [f for f in sorted(os.listdir(shp_path)) if f.endswith(('.shp', '.geojson'))]
         raster_tiles = sorted([f for f in os.listdir(raster_path) if f.split('.')[0] in [v.split('.')[0] for v in vector_tiles]])
     elif shp_path.suffix == '.gpkg':
-        layers = sorted(fiona.listlayers(shp_path)) # Assume that shp_path contains a geopackage with layers named after images
-        raster_tiles = sorted([f for f in os.listdir(raster_path) if f.split('.')[0] in layers])
+        layers = sorted(gpd.list_layers(shp_path)) # Assume that shp_path contains a geopackage with layers named after images
+        raster_tiles = sorted([f for f in os.listdir(raster_path) if f.split('.')[0] in layers.name])
     ann_id = 1
     for i, r in tqdm(enumerate(raster_tiles)):
         tile_anns = []
@@ -249,8 +249,8 @@ def shp_to_coco_results(prediction_path:Path, raster_path:Path, coco_dict:Path, 
         vector_tiles = sorted([f for f in os.listdir(prediction_path) if f.endswith(('.shp', '.geojson'))])
         raster_tiles = sorted([f for f in os.listdir(raster_path) if f.split('.')[0] in [v.split('.')[0] for v in vector_tiles]])
     elif prediction_path.suffix == '.gpkg':
-        layers = sorted(fiona.listlayers(shp_path)) # Assume that shp_path contains a geopackage with layers named after images
-        raster_tiles = sorted([f for f in os.listdir(raster_path) if f.split('.')[0] in layers])
+        layers = sorted(gpd.list_layers(shp_path)) # Assume that shp_path contains a geopackage with layers named after images
+        raster_tiles = sorted([f for f in os.listdir(raster_path) if f.split('.')[0] in layers.name])
     results = []
     for i in tqdm(range_of(raster_tiles)):
         for im_id, im in enumerate(coco_dict['images']):
@@ -287,8 +287,8 @@ def shp_to_yolo(raster_path:Path, shp_path:Path, outpath:Path, label_col:str, na
         vector_tiles = sorted([f for f in os.listdir(shp_path) if f.endswith(('.shp', '.geojson'))])
         raster_tiles = sorted([f for f in os.listdir(raster_path) if f.split('.')[0] in [v.split('.')[0] for v in vector_tiles]])
     elif shp_path.suffix == '.gpkg':
-        layers = sorted(fiona.listlayers(shp_path)) # Assume that shp_path contains a geopackage with layers named after images
-        raster_tiles = sorted([f for f in os.listdir(raster_path) if f.split('.')[0] in layers])
+        layers = sorted(gpd.list_layers(shp_path)) # Assume that shp_path contains a geopackage with layers named after images
+        raster_tiles = sorted([f for f in os.listdir(raster_path) if f.split('.')[0] in layers.name])
     ann_path = outpath/'labels'
     os.makedirs(ann_path, exist_ok=True)
     names = {n: i for i, n in enumerate(names)}
